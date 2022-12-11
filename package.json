@@ -1,0 +1,43 @@
+{
+	"name": "move-component",
+	"description": "Moves component to ui package and updates all the paths",
+	"version": "0.0.1",
+	"license": "UNLICENSED",
+	"bin": {
+		"move-component": "index.js"
+	},
+	"type": "module",
+	"author": {
+		"name": "Max Klammer",
+		"email": "maximilian.klammer@pleo.io",
+		"url": "https://maxklammer.com"
+	},
+	"keywords": [
+		"move-component",
+		"Max Klammer"
+	],
+	"files": [
+		"index.js",
+		"utils"
+	],
+	"scripts": {
+		"format": "prettier --write \"./**/*.{js,json}\"",
+		"lint": "eslint --ignore-path .gitignore .",
+		"validate": "npm run format && npm run lint"
+	},
+	"dependencies": {
+		"chalk": "^4.1.2",
+		"chalk-animation": "^2.0.3",
+		"cli-alerts": "^1.2.2",
+		"cli-handle-error": "^4.4.0",
+		"cli-handle-unhandled": "^1.1.1",
+		"cli-meow-help": "^3.1.0",
+		"cli-welcome": "^2.2.2",
+		"meow": "^9.0.0"
+	},
+	"devDependencies": {
+		"eslint": "^8.29.0",
+		"eslint-config-prettier": "^8.5.0",
+		"prettier": "^2.8.1"
+	}
+}
