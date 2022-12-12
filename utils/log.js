@@ -1,11 +1,16 @@
-import alert from 'cli-alerts';
-
+import chalk from 'chalk';
 const log = (info, level = 'warning') => {
-	alert({
-		type: level,
-		name: level === `error` ? `Error` : `Info`,
-		msg: info
-	});
+	//log error with chalk
+	const logLevels = {
+		error: chalk.red,
+		warning: chalk.yellow,
+		info: chalk.blue
+	};
+
+	const logLevel = logLevels[level];
+
+	console.log(logLevel(info));
+	console.log();
 };
 
 export default {
