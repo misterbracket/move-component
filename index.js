@@ -14,7 +14,6 @@ import init from './utils/init.js';
 import cli from './utils/cli.js';
 import log from './utils/log.js';
 import path from 'path';
-import { camelize } from './utils/helpers.js';
 
 const input = cli.input;
 const flags = cli.flags;
@@ -35,30 +34,31 @@ const PACKAGE_PATH = `${PACKAGES_FOLDER}/${PACKAGE_NAME}/src/components`;
 
 	const [componentName] = input;
 
-	console.log(camelize(componentName));
-
 	// 0. Checks
 	//check if there is a folder with the name of the input
 	checkFolderExists(componentName);
+	// check if exports are named exports
+	checkForNamedExports(componentName);
 	//check if component exports props
-	checkExports(componentName);
+	checkPropsExports(componentName);
 
 	// 1. Get all the paths
 	const paths = getPaths();
 
 	// 2. move folder to targetPath
-	// moveComponent(paths.pathToPackage, componentName);
+	moveComponent(paths.pathToPackage, componentName);
 
-	// // 3. update the index file in the ui package
-	// updateIndexFile(paths.pathToRepoRoot, componentName);
+	// 3. update the index file in the ui package
+	updateIndexFile(paths.pathToRepoRoot, componentName);
 
-	// // 4. update all the paths in repo
-	// updateImports(paths.pathToRepoRoot, componentName, paths.pathToProjectRoot);
-	// log.info(`✨ Updated imports of ${componentName}`);
+	// 4. update all the paths in repo
+	updateImports(paths.pathToRepoRoot, componentName, paths.pathToProjectRoot);
+	log.info(`✨ Updated imports of ${componentName}`);
 
 	const endAnimation = chalkAnimation.rainbow(
 		'🎉 Component moved successfully'
 	);
+
 	setTimeout(() => {
 		endAnimation.stop();
 	}, 2000);
@@ -71,7 +71,21 @@ function checkFolderExists(componentName) {
 	}
 }
 
-function checkExports(componentName) {
+function checkForNamedExports(componentName) {
+	const componentContent = fs.readFileSync(
+		`./${componentName}/${componentName}.tsx`,
+		'utf8'
+	);
+
+	if (componentContent.includes('export default')) {
+		log.error(
+			`The component ${componentName} exports a default export. Please change them into named exports before moving the component.`
+		);
+		process.exit(1);
+	}
+}
+
+function checkPropsExports(componentName) {
 	// Read the file contents
 	const data = fs.readFileSync(
 		`${componentName}/${componentName}.tsx`,
@@ -83,7 +97,7 @@ function checkExports(componentName) {
 	const interfaceExport = `export interface Props`;
 	if (data.includes(typeExport) || data.includes(interfaceExport)) {
 		log.error(
-			`The component ${componentName} exports Props. Please rename them before moving the component.`
+			`The component ${componentName} has an export named "Props". Please rename the export before moving the component.`
 		);
 		process.exit(1);
 	}
