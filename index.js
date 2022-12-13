@@ -14,10 +14,11 @@ import init from './utils/init.js';
 import cli from './utils/cli.js';
 import log from './utils/log.js';
 import path from 'path';
+import { camelize } from './utils/helpers.js';
 
 const input = cli.input;
 const flags = cli.flags;
-const { clear, debug } = flags;
+const { clear } = flags;
 
 const PACKAGES_FOLDER = `packages`;
 const PACKAGE_NAME = `ui`;
@@ -26,8 +27,6 @@ const PACKAGE_PATH = `${PACKAGES_FOLDER}/${PACKAGE_NAME}/src/components`;
 
 (async () => {
 	init({ clear });
-	input.includes(`help`) && showHelp(0);
-	chalkAnimation.rainbow("Hi Gang, Let's move some components");
 
 	if (input.length === 0) {
 		log.error(`No component name provided`);
@@ -35,6 +34,8 @@ const PACKAGE_PATH = `${PACKAGES_FOLDER}/${PACKAGE_NAME}/src/components`;
 	}
 
 	const [componentName] = input;
+
+	console.log(camelize(componentName));
 
 	// 0. Checks
 	//check if there is a folder with the name of the input
@@ -46,13 +47,21 @@ const PACKAGE_PATH = `${PACKAGES_FOLDER}/${PACKAGE_NAME}/src/components`;
 	const paths = getPaths();
 
 	// 2. move folder to targetPath
-	moveComponent(paths.pathToPackage, componentName);
+	// moveComponent(paths.pathToPackage, componentName);
 
-	// 3. update the index file in the ui package
-	updateIndexFile(paths.pathToRepoRoot, componentName);
+	// // 3. update the index file in the ui package
+	// updateIndexFile(paths.pathToRepoRoot, componentName);
 
-	// 4. update all the paths in repo
-	updateImports(paths.pathToRepoRoot, componentName, paths.pathToProjectRoot);
+	// // 4. update all the paths in repo
+	// updateImports(paths.pathToRepoRoot, componentName, paths.pathToProjectRoot);
+	// log.info(`✨ Updated imports of ${componentName}`);
+
+	const endAnimation = chalkAnimation.rainbow(
+		'🎉 Component moved successfully'
+	);
+	setTimeout(() => {
+		endAnimation.stop();
+	}, 2000);
 })();
 
 function checkFolderExists(componentName) {
@@ -105,21 +114,16 @@ function getPaths() {
 }
 
 function moveComponent(pathToPackage, componentName) {
-	//move folder to targetPath
-	fs.rename(
-		`./${componentName}`,
-		`${pathToPackage}/${componentName}`,
-		err => {
-			if (err) {
-				// Handle any errors
-				log.error(err);
-				process.exit(1);
-			} else {
-				// The folder was moved successfully
-				log.info('📦 Folder moved to new location');
-			}
-		}
-	);
+	try {
+		fs.renameSync(
+			`./${componentName}`,
+			`${pathToPackage}/${componentName}`
+		);
+		log.info('📦 Folder moved to new location');
+	} catch (err) {
+		log.error(err);
+		process.exit(1);
+	}
 }
 
 function updateIndexFile(pathToRepoRoot, componentName) {
@@ -139,30 +143,30 @@ function updateIndexFile(pathToRepoRoot, componentName) {
 function updateImports(root, componentName, pathToProjectRoot) {
 	const files = fs.readdirSync(root);
 
+	// The new import should look like this:
+	// import { Button } from '@commercial-helios/ui'
+	// The old import looked like this:
+	// import { Button } from '@helios/shared/components/button'
+
+	const textToReplace = new RegExp(
+		`'@helios${pathToProjectRoot}/${componentName}'`,
+		'g'
+	);
+	const replacement = `'${PACKAGE_NAMESPACE}/${PACKAGE_NAME}/${componentName}'`;
+
 	for (let file of files) {
 		const filePath = path.join(root, file);
 
-		const excludeFolders = /\.git|node_modules|public/;
+		const excludeFolders = /\.git|node_modules|public|.cache/;
 		if (fs.statSync(filePath).isDirectory()) {
 			if (!excludeFolders.test(filePath)) {
 				// Recurse into a subdirectory
 				updateImports(filePath, componentName, pathToProjectRoot);
 			}
 		} else {
-			const textToReplace = new RegExp(
-				`'@helios${pathToProjectRoot}/${componentName}'`,
-				'g'
-			);
-			const replacement = `'${PACKAGE_NAMESPACE}/${PACKAGE_NAME}'`;
 			const fileContents = fs.readFileSync(filePath, 'utf8');
-			if (textToReplace.test(fileContents)) {
-				const newFileContents = fileContents.replace(
-					textToReplace,
-					replacement
-				);
-				fs.writeFileSync(filePath, newFileContents);
-				log.info(`Updated paths in ${filePath}`);
-			}
+
+			fileContents.replace(textToReplace, replacement);
 		}
 	}
 }
