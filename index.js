@@ -21,7 +21,6 @@ const { clear } = flags;
 
 const PACKAGES_FOLDER = `packages`;
 const PACKAGE_NAME = `ui`;
-const PACKAGE_NAMESPACE = `@commercial-helios`;
 const PACKAGE_PATH = `${PACKAGES_FOLDER}/${PACKAGE_NAME}/src/components`;
 
 (async () => {
@@ -52,8 +51,7 @@ const PACKAGE_PATH = `${PACKAGES_FOLDER}/${PACKAGE_NAME}/src/components`;
 	updateIndexFile(paths.pathToRepoRoot, componentName);
 
 	// 4. update all the paths in repo
-	updateImports(paths.pathToRepoRoot, componentName, paths.pathToProjectRoot);
-	log.info(`✨ Updated imports of ${componentName}`);
+	logImports(paths.pathToRepoRoot, componentName, paths.pathToProjectRoot);
 
 	const endAnimation = chalkAnimation.rainbow(
 		'🎉 Component moved successfully'
@@ -154,33 +152,33 @@ function updateIndexFile(pathToRepoRoot, componentName) {
 	log.info('🔝 Added export statement to ui package index file');
 }
 
-function updateImports(root, componentName, pathToProjectRoot) {
-	const files = fs.readdirSync(root);
+function logImports(root, componentName, pathToProjectRoot) {
+	function updateImports(root, componentName, pathToProjectRoot) {
+		const files = fs.readdirSync(root);
 
-	// The new import should look like this:
-	// import { Button } from '@commercial-helios/ui'
-	// The old import looked like this:
-	// import { Button } from '@helios/shared/components/button'
+		const oldImport = new RegExp(
+			`'@helios${pathToProjectRoot}/${componentName}'`,
+			'g'
+		);
 
-	const textToReplace = new RegExp(
-		`'@helios${pathToProjectRoot}/${componentName}'`,
-		'g'
-	);
-	const replacement = `'${PACKAGE_NAMESPACE}/${PACKAGE_NAME}/${componentName}'`;
+		for (let file of files) {
+			const filePath = path.join(root, file);
 
-	for (let file of files) {
-		const filePath = path.join(root, file);
-
-		const excludeFolders = /\.git|node_modules|public|.cache/;
-		if (fs.statSync(filePath).isDirectory()) {
-			if (!excludeFolders.test(filePath)) {
-				// Recurse into a subdirectory
-				updateImports(filePath, componentName, pathToProjectRoot);
+			const excludeFolders = /\.git|node_modules|public|.cache/;
+			if (fs.statSync(filePath).isDirectory()) {
+				if (!excludeFolders.test(filePath)) {
+					// Recurse into a subdirectory
+					updateImports(filePath, componentName, pathToProjectRoot);
+				}
+			} else {
+				const fileContents = fs.readFileSync(filePath, 'utf8');
+				if (oldImport.test(fileContents)) {
+					log.warning('🐥 ' + filePath);
+				}
 			}
-		} else {
-			const fileContents = fs.readFileSync(filePath, 'utf8');
-
-			fileContents.replace(textToReplace, replacement);
 		}
 	}
+	log.info(`✨ You need to update the imports of the following components:`);
+
+	updateImports(root, componentName, pathToProjectRoot);
 }
