@@ -1,7 +1,7 @@
 {
-	"name": "move-component",
+	"name": "@maxklammer/move-component",
 	"description": "Moves component to ui package and updates all the paths",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"license": "UNLICENSED",
 	"bin": {
 		"move-component": "index.js"
